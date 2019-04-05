@@ -14,7 +14,7 @@ $("#tinderslide").jTinder({
     },
 	animationRevertSpeed: 200,
 	animationSpeed: 400,
-	threshold: 10,
+	threshold: 2,
 	likeSelector: '.like',
 	dislikeSelector: '.dislike'
 });
