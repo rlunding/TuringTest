@@ -26,6 +26,8 @@
     var yStart = 0;
     var touchStart = false;
     var posX = 0, posY = 0, lastPosX = 0, lastPosY = 0, pane_width = 0, pane_count = 0, current_pane = 0;
+    var correctAnswers = 0;
+    var incorrectAnswers = 0;
 
     function Plugin(element, options) {
         this.element = element;
@@ -39,7 +41,6 @@
 
 
         init: function (element) {
-
             container = $(">ul", element);
             panes = $(">ul>li", element);
             pane_width = container.width();
@@ -56,9 +57,13 @@
             correctAnswer = $that.getCurrentPageRealOrFake();
             if (answer === correctAnswer) {
                 console.log("Yay! You answered correct.");
+                correctAnswers += 1;
             } else {
                 console.log("Bummer! You got cheated.");
+                incorrectAnswers += 1;
             }
+
+            $('#score').html( correctAnswers + '/' + (correctAnswers + incorrectAnswers) );
         },
 
         getCurrentPageRealOrFake: function () {
