@@ -8,171 +8,200 @@
  * https://github.com/do-web/jTinder/blob/master/LICENSE
  */
 ;(function ($, window, document, undefined) {
-	var pluginName = "jTinder",
-		defaults = {
-			onDislike: null,
-			onLike: null,
-			animationRevertSpeed: 200,
-			animationSpeed: 400,
-			threshold: 1,
-			likeSelector: '.like',
-			dislikeSelector: '.dislike'
-		};
+    var pluginName = "jTinder",
+        defaults = {
+            onDislike: null,
+            onLike: null,
+            animationRevertSpeed: 200,
+            animationSpeed: 400,
+            threshold: 1,
+            likeSelector: '.like',
+            dislikeSelector: '.dislike'
+        };
 
-	var container = null;
-	var panes = null;
-	var $that = null;
-	var xStart = 0;
-	var yStart = 0;
-	var touchStart = false;
-	var posX = 0, posY = 0, lastPosX = 0, lastPosY = 0, pane_width = 0, pane_count = 0, current_pane = 0;
+    var container = null;
+    var panes = null;
+    var $that = null;
+    var xStart = 0;
+    var yStart = 0;
+    var touchStart = false;
+    var posX = 0, posY = 0, lastPosX = 0, lastPosY = 0, pane_width = 0, pane_count = 0, current_pane = 0;
 
-	function Plugin(element, options) {
-		this.element = element;
-		this.settings = $.extend({}, defaults, options);
-		this._defaults = defaults;
-		this._name = pluginName;
-		this.init(element);
-	}
+    function Plugin(element, options) {
+        this.element = element;
+        this.settings = $.extend({}, defaults, options);
+        this._defaults = defaults;
+        this._name = pluginName;
+        this.init(element);
+    }
 
-	Plugin.prototype = {
+    Plugin.prototype = {
 
 
-		init: function (element) {
+        init: function (element) {
 
-			container = $(">ul", element);
-			panes = $(">ul>li", element);
-			pane_width = container.width();
-			pane_count = panes.length;
-			current_pane = panes.length - 1;
-			$that = this;
+            container = $(">ul", element);
+            panes = $(">ul>li", element);
+            pane_width = container.width();
+            pane_count = panes.length;
+            current_pane = panes.length - 1;
+            $that = this;
 
-			$(element).bind('touchstart mousedown', this.handler);
-			$(element).bind('touchmove mousemove', this.handler);
-			$(element).bind('touchend mouseup', this.handler);
-		},
+            $(element).bind('touchstart mousedown', this.handler);
+            $(element).bind('touchmove mousemove', this.handler);
+            $(element).bind('touchend mouseup', this.handler);
+        },
 
-		showPane: function (index) {
-			panes.eq(current_pane).hide();
-			current_pane = index;
-		},
+        answer: function (answer) {
+            correctAnswer = $that.getCurrentPageRealOrFake();
+            if (answer === correctAnswer) {
+                console.log("Yay! You answered correct.");
+            } else {
+                console.log("Bummer! You got cheated.");
+            }
+        },
 
-		next: function () {
-			return this.showPane(current_pane - 1);
-		},
+        getCurrentPageRealOrFake: function () {
+            if (panes.eq(current_pane).children('.real').length) {
+                return 'real';
+            }
+            if (panes.eq(current_pane).children('.fake').length) {
+                return 'fake';
+            }
+            console.error("Current page is neither real or fake!");
+            return 'unknown';
+        },
 
-		dislike: function() {
-			panes.eq(current_pane).animate({"transform": "translate(-" + (pane_width) + "px," + (pane_width*-1.5) + "px) rotate(-60deg)"}, $that.settings.animationSpeed, function () {
-				if($that.settings.onDislike) {
-					$that.settings.onDislike(panes.eq(current_pane));
-				}
-				$that.next();
-			});
-		},
+        showPane: function (index) {
+            panes.eq(current_pane).hide();
+            current_pane = index;
+        },
 
-		like: function() {
-			panes.eq(current_pane).animate({"transform": "translate(" + (pane_width) + "px," + (pane_width*-1.5) + "px) rotate(60deg)"}, $that.settings.animationSpeed, function () {
-				if($that.settings.onLike) {
-					$that.settings.onLike(panes.eq(current_pane));
-				}
-				$that.next();
-			});
-		},
+        next: function () {
+            return this.showPane(current_pane - 1);
+        },
 
-		handler: function (ev) {
-			ev.preventDefault();
+        dislike: function() {
+            $that.answer('fake');
+            console.log("dislike");
+            panes.eq(current_pane).animate({"transform": "translate(-" + (pane_width) + "px," + (pane_width*-1.5) + "px) rotate(-60deg)"}, $that.settings.animationSpeed, function () {
+                if($that.settings.onDislike) {
+                    $that.settings.onDislike(panes.eq(current_pane));
+                }
+                $that.next();
+            });
+        },
 
-			switch (ev.type) {
-				case 'touchstart':
-					if(touchStart === false) {
-						touchStart = true;
-						xStart = ev.originalEvent.touches[0].pageX;
-						yStart = ev.originalEvent.touches[0].pageY;
-					}
-				case 'mousedown':
-					if(touchStart === false) {
-						touchStart = true;
-						xStart = ev.pageX;
-						yStart = ev.pageY;
-					}
-				case 'mousemove':
-				case 'touchmove':
-					if(touchStart === true) {
-						var pageX = typeof ev.pageX == 'undefined' ? ev.originalEvent.touches[0].pageX : ev.pageX;
-						var pageY = typeof ev.pageY == 'undefined' ? ev.originalEvent.touches[0].pageY : ev.pageY;
-						var deltaX = parseInt(pageX) - parseInt(xStart);
-						var deltaY = parseInt(pageY) - parseInt(yStart);
-						var percent = ((100 / pane_width) * deltaX) / pane_count;
-						posX = deltaX + lastPosX;
-						posY = deltaY + lastPosY;
+        like: function() {
+            $that.answer('real');
+            console.log("like");
+            panes.eq(current_pane).animate({"transform": "translate(" + (pane_width) + "px," + (pane_width*-1.5) + "px) rotate(60deg)"}, $that.settings.animationSpeed, function () {
+                if($that.settings.onLike) {
+                    $that.settings.onLike(panes.eq(current_pane));
+                }
+                $that.next();
+            });
+        },
 
-						panes.eq(current_pane).css("transform", "translate(" + posX + "px," + posY + "px) rotate(" + (percent / 2) + "deg)");
+        handler: function (ev) {
+            ev.preventDefault();
 
-						var opa = (Math.abs(deltaX) / $that.settings.threshold) / 100 + 0.2;
-						if(opa > 1.0) {
-							opa = 1.0;
-						}
-						if (posX >= 0) {
-							panes.eq(current_pane).find($that.settings.likeSelector).css('opacity', opa);
-							panes.eq(current_pane).find($that.settings.dislikeSelector).css('opacity', 0);
-						} else if (posX < 0) {
+            switch (ev.type) {
+                case 'touchstart':
+                    if(touchStart === false) {
+                        touchStart = true;
+                        xStart = ev.originalEvent.touches[0].pageX;
+                        yStart = ev.originalEvent.touches[0].pageY;
+                    }
+                case 'mousedown':
+                    if(touchStart === false) {
+                        touchStart = true;
+                        xStart = ev.pageX;
+                        yStart = ev.pageY;
+                    }
+                case 'mousemove':
+                case 'touchmove':
+                    if(touchStart === true) {
+                        var pageX = typeof ev.pageX == 'undefined' ? ev.originalEvent.touches[0].pageX : ev.pageX;
+                        var pageY = typeof ev.pageY == 'undefined' ? ev.originalEvent.touches[0].pageY : ev.pageY;
+                        var deltaX = parseInt(pageX) - parseInt(xStart);
+                        var deltaY = parseInt(pageY) - parseInt(yStart);
+                        var percent = ((100 / pane_width) * deltaX) / pane_count;
+                        posX = deltaX + lastPosX;
+                        posY = deltaY + lastPosY;
 
-							panes.eq(current_pane).find($that.settings.dislikeSelector).css('opacity', opa);
-							panes.eq(current_pane).find($that.settings.likeSelector).css('opacity', 0);
-						}
-					}
-					break;
-				case 'mouseup':
-				case 'touchend':
-					touchStart = false;
-					var pageX = (typeof ev.pageX == 'undefined') ? ev.originalEvent.changedTouches[0].pageX : ev.pageX;
-					var pageY = (typeof ev.pageY == 'undefined') ? ev.originalEvent.changedTouches[0].pageY : ev.pageY;
-					var deltaX = parseInt(pageX) - parseInt(xStart);
-					var deltaY = parseInt(pageY) - parseInt(yStart);
+                        panes.eq(current_pane).css("transform", "translate(" + posX + "px," + posY + "px) rotate(" + (percent / 2) + "deg)");
 
-					posX = deltaX + lastPosX;
-					posY = deltaY + lastPosY;
-					var opa = Math.abs((Math.abs(deltaX) / $that.settings.threshold) / 100 + 0.2);
+                        var opa = (Math.abs(deltaX) / $that.settings.threshold) / 100 + 0.2;
+                        if(opa > 1.0) {
+                            opa = 1.0;
+                        }
+                        if (posX >= 0) {
+                            panes.eq(current_pane).find($that.settings.likeSelector).css('opacity', opa);
+                            panes.eq(current_pane).find($that.settings.dislikeSelector).css('opacity', 0);
+                        } else if (posX < 0) {
 
-					if (opa >= 1) {
-						if (posX > 0) {
-							panes.eq(current_pane).animate({"transform": "translate(" + (pane_width) + "px," + (posY + pane_width) + "px) rotate(60deg)"}, $that.settings.animationSpeed, function () {
-								if($that.settings.onLike) {
-									$that.settings.onLike(panes.eq(current_pane));
-								}
-								$that.next();
-							});
-						} else {
-							panes.eq(current_pane).animate({"transform": "translate(-" + (pane_width) + "px," + (posY + pane_width) + "px) rotate(-60deg)"}, $that.settings.animationSpeed, function () {
-								if($that.settings.onDislike) {
-									$that.settings.onDislike(panes.eq(current_pane));
-								}
-								$that.next();
-							});
-						}
-					} else {
-						lastPosX = 0;
-						lastPosY = 0;
-						panes.eq(current_pane).animate({"transform": "translate(0px,0px) rotate(0deg)"}, $that.settings.animationRevertSpeed);
-						panes.eq(current_pane).find($that.settings.likeSelector).animate({"opacity": 0}, $that.settings.animationRevertSpeed);
-						panes.eq(current_pane).find($that.settings.dislikeSelector).animate({"opacity": 0}, $that.settings.animationRevertSpeed);
-					}
-					break;
-			}
-		}
-	};
+                            panes.eq(current_pane).find($that.settings.dislikeSelector).css('opacity', opa);
+                            panes.eq(current_pane).find($that.settings.likeSelector).css('opacity', 0);
+                        }
+                    }
+                    break;
+                case 'mouseup':
+                case 'touchend':
+                    touchStart = false;
+                    var pageX = (typeof ev.pageX == 'undefined') ? ev.originalEvent.changedTouches[0].pageX : ev.pageX;
+                    var pageY = (typeof ev.pageY == 'undefined') ? ev.originalEvent.changedTouches[0].pageY : ev.pageY;
+                    var deltaX = parseInt(pageX) - parseInt(xStart);
+                    var deltaY = parseInt(pageY) - parseInt(yStart);
 
-	$.fn[ pluginName ] = function (options) {
-		this.each(function () {
-			if (!$.data(this, "plugin_" + pluginName)) {
-				$.data(this, "plugin_" + pluginName, new Plugin(this, options));
-			}
-			else if ($.isFunction(Plugin.prototype[options])) {
-				$.data(this, 'plugin_' + pluginName)[options]();
-		    }
-		});
+                    posX = deltaX + lastPosX;
+                    posY = deltaY + lastPosY;
+                    var opa = Math.abs((Math.abs(deltaX) / $that.settings.threshold) / 100 + 0.2);
 
-		return this;
-	};
+                    if (opa >= 1) {
+                        if (posX > 0) {
+                            $that.answer('real');
+                            console.log("like");
+                            panes.eq(current_pane).animate({"transform": "translate(" + (pane_width) + "px," + (posY + pane_width) + "px) rotate(60deg)"}, $that.settings.animationSpeed, function () {
+                                if($that.settings.onLike) {
+                                    $that.settings.onLike(panes.eq(current_pane));
+                                }
+                                $that.next();
+                            });
+                        } else {
+                            $that.answer('fake');
+                            console.log("dislike");
+                            console.log(panes.eq(current_pane).children('.fake').length);
+                            panes.eq(current_pane).animate({"transform": "translate(-" + (pane_width) + "px," + (posY + pane_width) + "px) rotate(-60deg)"}, $that.settings.animationSpeed, function () {
+                                if($that.settings.onDislike) {
+                                    $that.settings.onDislike(panes.eq(current_pane));
+                                }
+                                $that.next();
+                            });
+                        }
+                    } else {
+                        lastPosX = 0;
+                        lastPosY = 0;
+                        panes.eq(current_pane).animate({"transform": "translate(0px,0px) rotate(0deg)"}, $that.settings.animationRevertSpeed);
+                        panes.eq(current_pane).find($that.settings.likeSelector).animate({"opacity": 0}, $that.settings.animationRevertSpeed);
+                        panes.eq(current_pane).find($that.settings.dislikeSelector).animate({"opacity": 0}, $that.settings.animationRevertSpeed);
+                    }
+                    break;
+            }
+        }
+    };
+
+    $.fn[ pluginName ] = function (options) {
+        this.each(function () {
+            if (!$.data(this, "plugin_" + pluginName)) {
+                $.data(this, "plugin_" + pluginName, new Plugin(this, options));
+            }
+            else if ($.isFunction(Plugin.prototype[options])) {
+                $.data(this, 'plugin_' + pluginName)[options]();
+            }
+        });
+
+        return this;
+    };
 
 })(jQuery, window, document);
